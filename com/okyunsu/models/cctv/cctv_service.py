@@ -1,7 +1,7 @@
 
 from com.okyunsu.models.cctv.data_reader import DataReader
-
-
+from com.okyunsu.models.cctv.googlemaps_singleton import GoogleMapsSingleton
+import os
 import pandas as pd
 
 from com.okyunsu.models.cctv.dataset import Dataset
@@ -56,17 +56,41 @@ class CctvService:
     def crime_ration(reader)-> object:
         crime = reader.crime
         print(f"crime 데이터 헤드: {crime.head()}")
-        # station_name = [] # 경찰서 관서명 리스트
-        # for name in crime['관서명']:
-        #     station_name.append('서울' + str(name[:-1])+ '경찰서')
-        # station_addrs = []
-        # station_lats = []
-        # station_lngs = []
-        # gmaps = DataReader.create_gmaps()
+        station_name = [] # 경찰서 관서명 리스트
+        for name in crime['관서명']:
+            station_name.append('서울' + str(name[:-1])+ '경찰서')
+        station_addrs = []
+        station_lats = []
+        station_lngs = []
+        gmaps = GoogleMapsSingleton()
+        for name in station_name:
+            tmp = gmaps.geocode(name, language = 'ko')
+            print(f"{name}의 검색 결과: {tmp[0].get("formatted_address")}")
+            station_addrs.append(tmp[0].get("formatted_address"))
+            tmp_loc = tmp[0].get("geometry")
+            station_lats.append(tmp_loc['location']['lat'])
+            station_lngs.append(tmp_loc['location']['lng'])
+        
+        print(f"자치구 리스트: {station_addrs}")
+        gu_names = []
+        for name in station_addrs:
+            tmp = name.split()
+            tmp_gu = [gu for gu in tmp if gu[-1] == "구"][0]
+            gu_names.append(tmp_gu)
+        [print(f"자치구 리스트 2 : {gu_names}")]
+        crime["자치구"] = gu_names
+        save_dir = r"C:\Users\bitcamp\Documents\crime\com\okyunsu\saved_data"
+        save_path = os.path.join(save_dir, "police_postion.csv")
+
+        # 저장할 폴더가 없으면 생성
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+
+        # CSV 파일 저장 (덮어쓰기가 가능하도록 mode='w' 사용)
+        crime.to_csv(save_path, index=False)
 
         return reader
         
-    
     @staticmethod
     def pop_ratio(reader)-> object:
         pop = reader.pop
