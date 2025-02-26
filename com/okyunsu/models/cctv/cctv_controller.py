@@ -13,7 +13,7 @@ class CctvController:
 
     def modeling(self, *args):
            reader = self.service.preprocess(*args)
-           self.print_reader(reader)
+        #    self.print_reader(reader)
            return reader
 
 
